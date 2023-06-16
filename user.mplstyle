@@ -1,0 +1,8 @@
+# Light-theme napari colour scheme for matplotlib plots
+
+figure.facecolor    : red
+axes.labelcolor     : green # Working
+axes.facecolor      : blue
+axes.edgecolor      : red
+xtick.color         : blue # Working
+ytick.color         : green # Working

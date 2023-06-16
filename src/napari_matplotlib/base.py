@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+import matplotlib.style
 import napari
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qtagg import (
@@ -41,9 +42,11 @@ class BaseNapariMPLWidget(QWidget):
         super().__init__(parent=parent)
         self.viewer = napari_viewer
 
-        self.canvas = FigureCanvas()
+        # Sets figure.* style
+        with matplotlib.style.context(self._get_current_style()):
+            self.canvas = FigureCanvas()
 
-        self.canvas.figure.patch.set_facecolor("none")
+        # self.canvas.figure.patch.set_facecolor("none")
         self.canvas.figure.set_layout_engine("constrained")
         self.toolbar = NapariNavigationToolbar(
             self.canvas, parent=self
@@ -52,7 +55,7 @@ class BaseNapariMPLWidget(QWidget):
         # callback to update when napari theme changed
         # TODO: this isn't working completely (see issue #140)
         # most of our styling respects the theme change but not all
-        self.viewer.events.theme.connect(self._on_theme_change)
+        # self.viewer.events.theme.connect(self._on_theme_change)
 
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.toolbar)
@@ -69,8 +72,11 @@ class BaseNapariMPLWidget(QWidget):
 
         The Axes is saved on the ``.axes`` attribute for later access.
         """
-        self.axes = self.figure.subplots()
-        self.apply_napari_colorscheme(self.axes)
+        # Sets axes.* style.
+        # Does not set any text styling set by axes.* keys
+        with matplotlib.style.context(self._get_current_style()):
+            self.axes = self.figure.subplots()
+        # self.apply_napari_colorscheme(self.axes)
 
     def apply_napari_colorscheme(self, ax: Axes) -> None:
         """Apply napari-compatible colorscheme to an Axes."""
@@ -92,6 +98,9 @@ class BaseNapariMPLWidget(QWidget):
         # changing colors of axes labels
         ax.tick_params(axis="x", colors=text_colour)
         ax.tick_params(axis="y", colors=text_colour)
+
+    def _get_current_style(self) -> Path:
+        return Path.cwd() / "user.mplstyle"
 
     def _on_theme_change(self) -> None:
         """Update MPL toolbar and axis styling when `napari.Viewer.theme` is changed.
@@ -245,7 +254,7 @@ class NapariMPLWidget(BaseNapariMPLWidget):
             isinstance(layer, self.input_layer_types) for layer in self.layers
         ):
             self.draw()
-        self.apply_napari_colorscheme(self.figure.gca())
+        # self.apply_napari_colorscheme(self.figure.gca())
         self.canvas.draw()
 
     def clear(self) -> None:
@@ -288,7 +297,10 @@ class SingleAxesWidget(NapariMPLWidget):
         """
         Clear the axes.
         """
-        self.axes.clear()
+        # Clearing axes sets new defaults, so need to make sure style is applied when
+        # this happens
+        with matplotlib.style.context(self._get_current_style()):
+            self.axes.clear()
 
 
 class NapariNavigationToolbar(NavigationToolbar2QT):
